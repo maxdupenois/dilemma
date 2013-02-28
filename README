@@ -1,0 +1,4 @@
+WIP
+----
+Dilemma will be a simple game based on the prisoners dilemma. Used to test an idea for a node based game engine that
+uses web sockets to communicate state.
