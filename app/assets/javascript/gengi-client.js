@@ -54,24 +54,27 @@
     }
   };
   
-  var canvasScene = function(){
+  var canvasScene = function(d){
     var statemd5 = '';
     var canvas = null;
     var bufferCanvas = null;
+    var dimensions = d;
+    if(dimensions == null){
+      dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
+    }
     var buildCanvas = function(){
       if(canvas != null) return ;
       $('body').html("");
-      
       var c = $('<canvas/>')
           .attr("id", "dilemma-canvas")
-          .attr("width", $(window).width()-20)
-          .attr("height", $(window).height()-20)
+          .attr("width", dimensions.w)
+          .attr("height", dimensions.h)
           .attr("style", "background-color: #000;");
       var cBuffer = c.clone().attr('style' , 'display:none;');
       bufferCanvas = cBuffer;
       $('body').append(c);
       canvas = c;
-      gengic.setWindow(canvas);
+      gengic.setWindow(canvas, {'x' : dimensions.x, 'y' : dimensions.y});
     };
     return {
       getCanvas : function(){
@@ -102,9 +105,16 @@
       paint : function(g, state){
         console.log("SHOULD BE OVERRIDDEN");
         //OVERRIDE
+      },
+      rebuildCanvas : function(d){
+        dimensions = d;
+        if(dimensions == null){
+          dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
+        }
+        buildCanvas();
       }
     }
-  }();
+  };
  
  var socketMessage = function(d){
    var data = JSON.parse(d);
@@ -139,9 +149,19 @@
        k = wantedkeys[i];
        evt[k] = e[k];
      }
+     if(e.data){
+       var origin = e.data.origin;
+       e['offsetX'] = e['offsetX'] - origin.x;
+       e['offsetY'] = origin.y - e['offsetY'];
+     }
      evt['x'] = e['offsetX'];
      evt['y'] = e['offsetY'];
-     socket.send(JSON.stringify({"evt" : evt}));
+     var fields = {};
+     $('input,select,textarea', gamewindow).each(function(i, e){
+       var el = $(e);
+       fields[el.attr('name')] = el.val();
+     });
+     socket.send(JSON.stringify({"evt" : evt, 'fields' : fields}));
    },
    interactable : function(element, eventtype, functionname){
      $(element).on(eventtype, function(evt){
@@ -176,8 +196,9 @@
       callback();
     };
   },
-  setWindow : function(element){
+  setWindow : function(element, orgn){
     var namespace = 'gengic';
+    var origin = (orgn != null ? orgn : {'x' : 0, 'y': 0});
     var events = ['click', 'mousemove', 'mousedown', 'mouseup', 'keydown', 'keyup', 'keypress'];
     if($(gamewindow).length > 0){
       for(var i = 0; i < events.length; i++){
@@ -186,11 +207,11 @@
     }
     gamewindow = $(element);
     for(var i = 0; i < events.length; i++){
-      $(gamewindow).on(events[i]+"."+namespace, gengicObj.interaction);
+      $(gamewindow).on(events[i]+"."+namespace, {'origin': origin}, gengicObj.interaction);
     }
   },
-  newCanvasScene : function(){
-    var newScene = canvasScene;
+  newCanvasScene : function(d){
+    var newScene = canvasScene(d);
     return newScene;
   }
  };

@@ -1,16 +1,27 @@
 var default_port = 1337;
 var express = require('express')
+  , MemoryStore = express.session.MemoryStore
   , url = require('url')
   , fs = require("fs")
   , app = express()
   , server = require('http').createServer(app).listen(default_port)
   , io = require('engine.io').attach(server)
-  , dilemma = require('./engine/dilemma').init(io);
+  , sessionStore = new MemoryStore()
+  , dilemma = require('./engine/dilemma').init(io, sessionStore)
+  , connect = require('connect')
+  , profile = require('v8-profiler')
+  ;
 
 
+app.configure(function(){
+  app.use(express.cookieParser());
+  app.use(express.session({secret :"nevereverhaveieverfeltsobad", store : sessionStore, key : 'gengi.sid'}));
+});
 
-app.use(function(req, res, next){
-  console.log('%s %s', req.method, req.url);
+app.use(function(req, res, next){  
+  // DEBUG CODE GOES HERE
+  // console.log('%s %s', req.method, req.url);
+  // console.log("STORE:", sessionStore);
   next();
 });
 
@@ -40,6 +51,7 @@ app.use(function(req, res, next){
   req['mount'] = mnt;
   next();
 });
+
 app.get('/', function(req, res, next){
   res.sendfile(req['mount']+'/home.html');
 });
