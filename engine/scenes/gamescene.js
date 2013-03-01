@@ -1,4 +1,5 @@
 var gengi = require('../gengi/gengi')
+  ,utils = require('../gengi/utils')
   ,galaxy = require('../galaxy')
   ,planetcomponent = require('../components/planetcomponent').planetcomponent
   ,galaxycomponent = require('../components/galaxycomponent').galaxycomponent
@@ -9,7 +10,7 @@ exports.gamescene = function(name, user){
   var scene = gengi.scene(name, user);
   
   var galaxyc = galaxycomponent(user);
-  scene.addComponent(galaxy);
+  scene.addComponent(galaxyc);
   
   var hud = hudcomponent(user);
   scene.addComponent(hud);
@@ -17,16 +18,14 @@ exports.gamescene = function(name, user){
   var planets = [];
   scene.addPlanetComponent = function(id, plnt){
     var planetc = planetcomponent(
-      id,
-      plnt,
-      user
+      id, plnt, user
       );
-    galaxy.addPlanet(plnt);
     scene.addComponent(planetc);
+    planets.push(planetc);
   };
-  for(var p = 0; p< dilemma.planets.length; p++){
-    scene.addPlanetComponent('planet'+p, galaxy.planets[p]);
-  }
+  utils.each(galaxy.planets, function(index, plnt){
+    scene.addPlanetComponent('planet'+index, plnt);
+  });
   var mousedown = false;
   var startmouseposition = {'x' : 0, 'y' : 0};
   scene.mousedown = function(evt){  
@@ -34,9 +33,9 @@ exports.gamescene = function(name, user){
     mousedown = true;
     
     var coords = galaxyc.translateViewCoordinatesToGalaxy(evt.x, evt.y);
-    for(var p = 0; p< planets.length; p++){  
-      planets[p].highlight(coords.x, coords.y);
-    }
+    utils.each(planets, function(index, plnt){
+      plnt.highlight(coords.x, coords.y);
+    });
   };
   scene.mouseup = function(evt){
     mousedown = false;

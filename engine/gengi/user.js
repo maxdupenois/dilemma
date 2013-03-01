@@ -21,7 +21,7 @@ var User = function User(sock, gm){
   this.uuid = utils.uuid();
   this.scenes = {};
   this.currentScene = null;
-  this.changeScene = null;
+  this.sceneToChangeTo = null;
 };
 User.prototype.initSocket = function(rejoin){
   this.socket.sendObj = socketsend;
@@ -37,11 +37,11 @@ User.prototype.initSocket = function(rejoin){
       var evt = data['evt'];
       if(utils.exists(evt['gengi_callback'])){
         var gamecallback = me.game[evt['gengi_callback']];
-        if(gamecallback instanceof Function) gamecallback (user_obj, evt, fields);
+        if(gamecallback instanceof Function) gamecallback(me, evt, fields);
       }
       var userfunc = me[evt['type']];
       var gamefunc = me[evt['type']];
-      if(userfunc instanceof Function) userfunc(evt, fields);
+      if(userfunc instanceof Function) userfunc.call(me, evt, fields);
       if(gamefunc instanceof Function) gamefunc(me, evt, fields);
     }
   });
@@ -51,7 +51,7 @@ User.prototype.initSocket = function(rejoin){
 };
 User.prototype.resetSocket = function(s){
   this.socket = s;
-  var scene = currentScene.getName();
+  var scene = this.currentScene.getName();
   this.initSocket(true);
   this.changeScene(scene);
 },
@@ -63,61 +63,59 @@ User.prototype.id = function(){
   return this.uuid;
 };
 User.prototype.changeState = function(state){ 
-  var stateSend = copy(state);
-  var md5 = crypto.createHash('md5');
-  md5.update(JSON.stringify(state), 'ascii');
-  stateSend['md5'] = md5.digest('hex');
-  socket.sendObj({'state' : stateSend});
+  var stateSend = utils.copy(state);
+  stateSend['md5'] = utils.md5(state);
+  this.socket.sendObj({'state' : stateSend});
 };
 
 User.prototype.changeScene = function(scene){
   var name = (typeof(scene['getName'])=="function" ? scene.getName() : scene);
-  changeScene = name;
+  this.sceneToChangeTo = name;
 };
 
 User.prototype.getCurrentScene = function(){
-  return currentScene;
+  return this.currentScene;
 };
 
 User.prototype.getScenes = function(){
-  return scenes;
+  return this.scenes;
 };
 
 User.prototype.getScene = function(name){
-  return scenes[name];
+  return this.scenes[name];
 };
 
 User.prototype.update = function(actualMsPerUpdate){
-  if (changeScene != null){
-    if(currentScene) currentScene.onExit();
-    scenes[changeScene].preEnter();
-    currentScene = scenes[changeScene];
-    currentScene.onEnter();
-    socket.sendObj({'scene' : changeScene});
-    changeScene = null;
+  if (this.sceneToChangeTo != null){
+    if(this.currentScene) this.currentScene.onExit();
+    this.scenes[this.sceneToChangeTo].preEnter();
+    this.currentScene = this.scenes[this.sceneToChangeTo];
+    this.currentScene.onEnter();
+    this.socket.sendObj({'scene' : this.sceneToChangeTo});
+    this.sceneToChangeTo = null;
   }
-  currentScene.update(actualMsPerUpdate);
+  this.currentScene.update(actualMsPerUpdate);
 };
 User.prototype.mousemove = function(evt){
-  if(currentScene) currentScene.mousemove(evt);
+  if(this.currentScene) this.currentScene.mousemove(evt);
 };
 User.prototype.mouseup = function(evt){
-  if(currentScene) currentScene.mouseup(evt);
+  if(this.currentScene) this.currentScene.mouseup(evt);
 };
 User.prototype.mousedown = function(evt){
-  if(currentScene) currentScene.mousedown(evt);
+  if(this.currentScene) this.currentScene.mousedown(evt);
 };
 User.prototype.click = function(evt){
-  if(currentScene) currentScene.click(evt);
+  if(this.currentScene) this.currentScene.click(evt);
 };
 User.prototype.keypress = function(evt){
-  if(currentScene) currentScene.keypress(evt);
+  if(this.currentScene) this.currentScene.keypress(evt);
 };
 User.prototype.keydown = function(evt){
-  if(currentScene) currentScene.keydown(evt);
+  if(this.currentScene) this.currentScene.keydown(evt);
 };
 User.prototype.keyup = function(evt){
-  if(currentScene) currentScene.keyup(evt);
+  if(this.currentScene) this.currentScene.keyup(evt);
 }
 
 

@@ -1,4 +1,7 @@
-var gengi = require('../gengi/gengi');
+var gengi = require('../gengi/gengi')
+    ,utils = require('../gengi/utils')
+    ,players = require('../players')
+    ;
 
 exports.hudcomponent = function(user){
   var component = gengi.component(user);
@@ -8,10 +11,9 @@ exports.hudcomponent = function(user){
       activeplayers : [],
       name : user.name
     };
-    var activeplayers = [];
-    for(var p in dilemma.players){
-      activeplayers.push(dilemma.players[p].name);
-    }
+    var activeplayers = utils.map(players.all(), function(player){
+      return player.name;
+    });
     hud.activeplayers = activeplayers;
     component.setStateValue('hud', hud);
   };

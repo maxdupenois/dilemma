@@ -9,13 +9,13 @@ var express = require('express')
   , sessionStore = new MemoryStore()
   , dilemma = require('./engine/dilemma').init(io, sessionStore)
   , connect = require('connect')
-  , profile = require('v8-profiler')
+  , config = require("./config")
   ;
 
 
 app.configure(function(){
   app.use(express.cookieParser());
-  app.use(express.session({secret :"nevereverhaveieverfeltsobad", store : sessionStore, key : 'gengi.sid'}));
+  app.use(express.session({secret : config.secret, store : sessionStore, key : 'gengi.sid'}));
 });
 
 app.use(function(req, res, next){  

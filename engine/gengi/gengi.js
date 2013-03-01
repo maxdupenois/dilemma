@@ -5,6 +5,7 @@ var connect = require('connect')
     ,user = require('./user').user
     ,scene = require('./scene').scene
     ,component = require('./component').component
+    ,config = require("../../config")
     ;
 
 exports.scene = scene;
@@ -52,8 +53,8 @@ exports.engine = function(){
   var run = function(){
     var start = new Date().getTime();
     var actualMsPerUpdate = (previousUpdateEnd != null ? start - previousUpdateEnd : desiredMSPerUpdate);
-    utils.eachOfMap(exports.users, function(k, user){
-      v.update(actualMsPerUpdate);
+    utils.each(exports.users, function(k, user){
+      user.update(actualMsPerUpdate);
     });
     previousUpdateEnd = new Date().getTime();
     var wait = desiredMSPerUpdate - actualMsPerUpdate;
@@ -86,7 +87,7 @@ exports.init = function(io, sessionStore, game){
 
   io.on('connection', function(socket){
     var signedcookies = cookie.parse(socket.request.headers.cookie);
-    var cookies = connect.utils.parseSignedCookies(signedcookies, "nevereverhaveieverfeltsobad");
+    var cookies = connect.utils.parseSignedCookies(signedcookies, config.secret);
     var sid = cookies['gengi.sid'];
     
     sessionStore.get(sid, function (err, session) {

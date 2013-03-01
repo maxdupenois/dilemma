@@ -4,7 +4,7 @@ var constants = require('./constants')
     
 var galaxy = {};
 
-galaxy.planets = [];
+exports.planets = [];
 
 galaxy.seed = function(){
   //Seed neutral planets
@@ -23,10 +23,10 @@ galaxy.newPlanet = function(){
 
 
 galaxy.addPlanet = function(p){
-  galaxy.planets.push(p);
-}
+  exports.planets.push(p);
+};
 
 exports.addPlanet = galaxy.addPlanet;
+exports.newPlanet = galaxy.newPlanet;
 exports.seed = galaxy.seed;
-exports.planets = galaxy.planets;
 

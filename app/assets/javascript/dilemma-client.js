@@ -273,7 +273,7 @@
     init : function(g){
       gengic = g;
       g.addScene('menu', menuscene);
-      var gamescene = gengic.newCanvasScene({'w': 800, 'h': 600, 'x' : 400, 'y' : 300});
+      var gamescene = gengic.newCanvasScene({'w': 1000, 'h': 800, 'x' : 500, 'y' : 400});
       gamescene.paint = gamescenePainter;
       
       g.addScene('game', gamescene);

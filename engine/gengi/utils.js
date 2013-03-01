@@ -61,7 +61,7 @@ exports.exists = function(obj){
 };
 
 exports.isblank = function(str){
-  return (!exports.exists(str)) || exports.trim(str).length() == 0;
+  return (!exports.exists(str)) || exports.trim(str).length == 0;
 };
 
 exports.mapKeys = function(obj){
@@ -88,12 +88,21 @@ exports.reduce = function(iterable, init, func){
   }
   return val;
 };
-exports.eachOfMap = function(map, func){
-  var keys = exports.mapKeys(map);
-  for(var k=0; k < keys.length; k++){
-    func(keys[k], map[keys[k]]);
+exports.each = function(iterable, func){
+  if (iterable instanceof Array){
+    for(var i=0; i < iterable.length; i++){
+      func(i, iterable[i]);
+    }
+  }else{
+    var keys = exports.mapKeys(iterable);
+    for(var k=0; k < keys.length; k++){
+      func(keys[k], iterable[keys[k]]);
+    }
   }
+
 };
+
+
 
 exports.clone = function(){
   // http://oranlooney.com/functional-javascript
@@ -104,7 +113,7 @@ exports.clone = function(){
   };
 }();
 
-exports.copy = function(){
+exports.copy = function(object){
   var objcopy = function(copied, obj){
     for(k in obj){
       if(obj[k] instanceof Function) continue;
@@ -130,5 +139,5 @@ exports.copy = function(){
     }
     return result;
   }
-  return copier(obj);
+  return copier(object);
 };
