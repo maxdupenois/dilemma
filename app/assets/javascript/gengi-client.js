@@ -24,98 +24,9 @@
    setTimeout(run, timeout);
  };
  
- //A state is a description of the view in json format,
-  var defaultScene = {
-    statestr : "",
-    render : function(state, msPerRender){
-      var win = $('#game-window');
-      framerate = gengic.getFramerate();
-      framerate = Math.round(framerate)
-      if(win.length == 0){
-        $('body').append(
-        $('<div/>').attr({id : "game-window"}).css({
-          "border" : "1px solid #ccc",
-          "color" : "#fff",
-          "background-color" : "#000",
-          "font-family" : "monospace",
-          "overflow" : 'scroll'
-          }).append(
-          $('<p/>').text('Ms per update: '+msPerRender+' framerate: '+framerate)
-          ).height(500)
-        );
-        win = $('#game-window');
-      }
-      $('#game-window p').first().text('Ms per update: '+msPerRender+' framerate: '+framerate);
-      var st = JSON.stringify(state);
-      if(this.statestr != st && st != null){
-        $('#game-window').append($('<p/>').text("STATE: "+st)); 
-        this.statestr = st;
-      }
-    }
-  };
-  
-  var canvasScene = function(d){
-    var statemd5 = '';
-    var canvas = null;
-    var bufferCanvas = null;
-    var dimensions = d;
-    if(dimensions == null){
-      dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
-    }
-    var buildCanvas = function(){
-      if(canvas != null) return ;
-      $('body').html("");
-      var c = $('<canvas/>')
-          .attr("id", "dilemma-canvas")
-          .attr("width", dimensions.w)
-          .attr("height", dimensions.h)
-          .attr("style", "background-color: #000;");
-      var cBuffer = c.clone().attr('style' , 'display:none;');
-      bufferCanvas = cBuffer;
-      $('body').append(c);
-      canvas = c;
-      gengic.setWindow(canvas, {'x' : dimensions.x, 'y' : dimensions.y});
-    };
-    return {
-      getCanvas : function(){
-        buildCanvas();
-        return canvas;
-      },
-      getBufferCanvas : function(){
-        buildCanvas();
-        return bufferCanvas;
-      },
-      graphics : function(){
-        return this.getCanvas()[0].getContext("2d");
-      },
-      bufferGraphics : function(){
-        return this.getBufferCanvas()[0].getContext("2d");
-      },
-      render : function(state, msPerRender){
-        if(statemd5 == state['md5']) return;
-        statemd5 = state['md5'];
-        var w = this.getCanvas().width();
-        var h = this.getCanvas().height();
-        var g = this.bufferGraphics();
-        g.clearRect(0, 0, w, h);
-        this.paint(g, state);
-        var imageData = g.getImageData(0, 0, w, h);
-        this.graphics().putImageData(imageData, 0, 0);
-      },
-      paint : function(g, state){
-        console.log("SHOULD BE OVERRIDDEN");
-        //OVERRIDE
-      },
-      rebuildCanvas : function(d){
-        dimensions = d;
-        if(dimensions == null){
-          dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
-        }
-        buildCanvas();
-      }
-    }
-  };
- 
+
+
+
  var socketMessage = function(d){
    var data = JSON.parse(d);
    data['md5']
@@ -209,18 +120,269 @@
     for(var i = 0; i < events.length; i++){
       $(gamewindow).on(events[i]+"."+namespace, {'origin': origin}, gengicObj.interaction);
     }
-  },
-  newCanvasScene : function(d){
-    var newScene = canvasScene(d);
-    return newScene;
   }
  };
  gengicObj.setWindow(document);
- //JQUERY HELPER
- $.fn.interactable = function(eventtype, functionname){
-   return gengicObj.interactable($(this), eventtype, functionname);
- };
+
  
  
  return gengicObj;
 })();
+
+
+
+
+
+gengic.scene = {};
+gengic.scene.canvasScene = function(d, au){
+  var alwaysupdate = au==true;
+  var statemd5 = '';
+  var canvas = null;
+  var bufferCanvas = null;
+  var dimensions = d;
+  if(dimensions == null){
+    dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
+  }
+  var buildCanvas = function(){
+    if(canvas != null) return ;
+    $('body').html("");
+    var c = $('<canvas/>')
+        .attr("id", "dilemma-canvas")
+        .attr("width", dimensions.w)
+        .attr("height", dimensions.h)
+        .attr("style", "background-color: #000;");
+    var cBuffer = c.clone().attr('style' , 'display:none;');
+    bufferCanvas = cBuffer;
+    $('body').append(c);
+    canvas = c;
+    gengic.setWindow(canvas, {'x' : dimensions.x, 'y' : dimensions.y});
+  };
+  return {
+    getCanvas : function(){
+      buildCanvas();
+      return canvas;
+    },
+    getBufferCanvas : function(){
+      buildCanvas();
+      return bufferCanvas;
+    },
+    graphics : function(){
+      return this.getCanvas()[0].getContext("2d");
+    },
+    bufferGraphics : function(){
+      return this.getBufferCanvas()[0].getContext("2d");
+    },
+    render : function(state, msPerRender){
+      if(!alwaysupdate && statemd5 == state['md5']) return;
+      statemd5 = state['md5'];
+      var w = this.getCanvas().width();
+      var h = this.getCanvas().height();
+      var g = this.bufferGraphics();
+      g.clearRect(0, 0, w, h);
+      this.paint(g, state, msPerRender);
+      var imageData = g.getImageData(0, 0, w, h);
+      this.graphics().putImageData(imageData, 0, 0);
+    },
+    painterMethod : function(g, func, data){
+      g.save();
+      g.beginPath();
+      func(g, data);
+      g.closePath();
+      g.restore();
+    },
+    showFramerate : function(g, c){
+      var colour = c;     
+      var framerate = gengic.getFramerate();
+      var framerate = Math.round(framerate)
+      this.painterMethod(g, function(g){
+        g.font = "bold 12px monospace";
+        g.fillStyle = colour;
+        g.textBaseline = "top";
+        g.fillText(framerate+" fps", 10, 10);
+      });
+    },
+    drawPoint : function(g, p, c){
+      g.save();
+      g.beginPath();
+      g.fillStyle = c;
+      g.arc(p[0], p[1], 3, 0, Math.PI*2);
+      g.fill();
+      g.closePath();
+      g.restore();
+    },
+    drawPanel : function(g, data){
+      var defaultdata = {x : 10, y : 10, w: 50, h : 100, fill : "#990000", outline : "#FF0000"};
+      var data = gengic.utils.merge(data,defaultdata);
+      var x = data.x, 
+          y = data.y, 
+          w = data.w, 
+          h = data.h, 
+          fill = data.fill, 
+          outline = data.outline;
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.fillStyle = fill;
+      g.globalAlpha = 0.4;
+      g.fill();
+      g.globalAlpha = 1;
+      g.strokeStyle = outline;
+      g.lineWidth = 1
+      g.stroke();
+      g.closePath();
+      g.restore();
+    },
+    paint : function(g, state, msPerRender){
+      console.log("SHOULD BE OVERRIDDEN");
+      //OVERRIDE
+    },
+    rebuildCanvas : function(d){
+      dimensions = d;
+      if(dimensions == null){
+        dimensions = {'w' : $(window).width()-20, 'h' : $(window).height()-20, 'x': 0, 'y' : 0}
+      }
+      buildCanvas();
+    }
+  }
+};
+
+
+var defaultScene = function(){
+  var scene = gengic.scene.canvasScene({'w' : 500, 'h' : 400});
+  scene.paint = function(g, state, msPerRender){
+    scene.showFramerate(g, "#FFFFFF");
+    scene.painterMethod(g, function(g){
+      g.font = "bold 12px monospace";
+      g.fillStyle = "#FFFFFF";
+      g.textBaseline = "top";
+      g.fillText(msPerRender+" ms per render", 10, 30);
+    });
+  };
+  return scene;
+}();
+
+
+gengic.utils = {};
+
+gengic.utils.select = function(iterable, func){
+  var newIterable;
+  if (iterable instanceof Array){
+    newIterable = [];
+    for(var i in iterable){
+      if(func(iterable[i])){
+        newIterable.push(iterable[i]);
+      }
+    }
+  }else{
+    newIterable = {};
+    for(var k in iterable){
+      if(func(k, iterable[k])){
+        newIterable[k] = iterable[k];
+      }
+    }
+  }
+  return newIterable;
+};
+
+
+
+gengic.utils.trim = function(str){
+  return str.replace(/(^\s*)|(\s*$)/, "");
+};
+
+gengic.utils.exists = function(obj){
+  return ((typeof(obj)).toLowerCase() != "undefined" && obj != null);
+};
+
+gengic.utils.isblank = function(str){
+  return (!gengic.utils.exists(str)) || gengic.utils.trim(str).length == 0;
+};
+
+gengic.utils.mapKeys = function(obj){
+  var actkeys = [];
+  for(var k in obj){
+    if(! (obj[k] instanceof Function)) actkeys.push(k);
+  }
+  return actkeys;
+};
+
+gengic.utils.map = function(iterable, func){
+  var newarr = [];
+  for(var i in iterable){
+    if(iterable[i] instanceof Function) continue;
+    newarr.push(func(iterable[i]));
+  }
+  return newarr;
+};
+gengic.utils.reduce = function(iterable, init, func){
+  var val = init;
+  for(var i in iterable){
+    if(iterable[i] instanceof Function) continue;
+    val = func(val, iterable[i]);
+  }
+  return val;
+};
+gengic.utils.each = function(iterable, func){
+  if (iterable instanceof Array){
+    for(var i=0; i < iterable.length; i++){
+      func(i, iterable[i]);
+    }
+  }else{
+    var keys = gengic.utils.mapKeys(iterable);
+    for(var k=0; k < keys.length; k++){
+      func(keys[k], iterable[keys[k]]);
+    }
+  }
+
+};
+gengic.utils.merge = function(data,defaultdata){
+  var merged = {};
+  gengic.utils.each(defaultdata, function(key, val){
+    merged[key] = gengic.utils.or(data[key], val);
+  });
+  return merged;
+};
+
+gengic.utils.or = function(firstchoice, secondchoice){
+  if(gengic.utils.exists(firstchoice)) return firstchoice;
+  return secondchoice;
+};
+
+
+gengic.utils.clone = function(){
+  // http://oranlooney.com/functional-javascript
+  function Clone() { };
+  return function (obj) {
+      Clone.prototype = obj;
+      return new Clone();
+  };
+}();
+
+gengic.utils.copy = function(object){
+  var objcopy = function(copied, obj){
+    for(k in obj){
+      if(obj[k] instanceof Function) continue;
+      copied[k] = copier(obj[k]);
+    }
+    return copied;
+  };
+  var arrcopy = function(copied, arr){
+    for(var i=0; i < arr.length; i++){
+      if(arr[i] instanceof Function) continue;
+      copied.push(copier(arr[i]));
+    }
+    return copied;
+  };
+  var copier = function(part){
+    var result;
+    if(part instanceof Array){
+      result = arrcopy([], part);
+    }else if(part instanceof Object){  
+      result = objcopy({}, part);
+    }else{
+      result = part;
+    }
+    return result;
+  }
+  return copier(object);
+};

@@ -104,6 +104,7 @@ exports.each = function(iterable, func){
 
 
 
+
 exports.clone = function(){
   // http://oranlooney.com/functional-javascript
   function Clone() { };

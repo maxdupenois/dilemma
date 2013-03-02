@@ -1,5 +1,14 @@
-;var dilemmac = (function(){
+;
+//Helper interactable jquery ext.
+$.fn.interactable = function(etype, gengicallback){
+  gengic.interactable($(this), etype, gengicallback);
+  return $(this);
+};
+
+var dilemmac = (function(){
   var gengic = null;
+  
+  //
   
   var menuscene = {
     statemd5 : '',
@@ -58,10 +67,7 @@
         var newy = y - proportionaly -50;
         return {'x' : newx, 'y' :newy}; 
       };
-      
-      var viewport = 
-      
-      
+            
       g.lineWidth = 2;
       var size = 3;
       var coords;
@@ -87,42 +93,8 @@
       }
       g.restore();
     };
-    var drawPoint = function(g, p, c){
-      g.save();
-      g.beginPath();
-      g.fillStyle = c;
-      g.arc(p[0], p[1], 3, 0, Math.PI*2);
-      g.fill();
-      g.closePath();
-      g.restore();
-    }
-    var drawPlanetBadge = function(g, planet, planetcoords){
-      // g.save();
-      var x = planetcoords.x + (3*planet.r/4)  
-      var y = planetcoords.y - planet.r
-      drawBadge(g, x, y, planet.r/40);
-      
-      // v1 = 5 * planet.r/40;
-      //   v2 = 10 * planet.r/40;
-      //   v3 = 20 * planet.r/40;
-      //   v4 = 40 * planet.r/40;
-      //   
-      //   g.beginPath();
-      //   g.moveTo(x, y);
-      //   g.quadraticCurveTo(x, y+v1, x-v2, y+v1);
-      //   g.quadraticCurveTo(x-v3, y+v3, x, y+v4);
-      //   g.quadraticCurveTo(x+v3, y+v3, x+v2, y+v1);
-      //   g.quadraticCurveTo(x, y+v1, x, y);
-      //   g.strokeStyle = "#FFFFFF";
-      //   g.lineWidth = 2;
-      //   g.stroke();
-      //   g.shadowColor = "#FFFFFF";
-      //   g.shadowBlur = 20;
-      //   g.fillStyle = "#000000"
-      //   g.fill();
-      //   g.closePath();
-      //   g.restore();  
-    };
+
+
     var drawBadge = function(g, x, y, scale){
       g.save();
       v1 = 5 * scale;
@@ -146,8 +118,9 @@
       g.restore();
     };
     
-    var drawPlanet = function(g, planet, galaxy){
-      g.save();
+    var drawPlanet = function(g, data){
+      var planet = data.planet;
+      var galaxy = data.galaxy;
       g.fillStyle = planet['c'];
       var coords = coordinateToCanvas(planet.x, planet.y, g, galaxy);
 
@@ -163,25 +136,21 @@
         g.stroke();
       }
       g.closePath();
-      // g.beginPath();
-      // g.font = "bold 12px sans-serif";
-      // g.fillStyle = "#ff0000";
-      // g.fillText(planet.name, coords.x, coords.y);
-      // g.closePath();
       g.restore();
       
       if (planet['owned']){
-        drawPlanetBadge(g, planet,coords);
+        var x = coords.x + (3*planet.r/4)  
+        var y = coords.y - planet.r
+        drawBadge(g, x, y, planet.r/40);
       }
     }; 
+
     var drawAxis = function(g, state){
-      g.save();
       var cw = g.canvas.width;
       var ch = g.canvas.height;
       var galaxy = state.galaxy;
       var x = galaxy.x;
       var y = galaxy.y;
-      g.beginPath();
       g.strokeStyle = "#ccc";
       g.lineWidth = 2;
       g.moveTo(cw/2, 0);
@@ -194,24 +163,11 @@
       g.font = "bold 12px sans-serif";
       g.fillStyle = "#ccc";
       g.fillText("("+Math.round(x)+", "+Math.round(y)+")", cw/2 + 10, ch/2 - 10);
-      g.closePath();
-      g.restore();
     };
-    var drawPanel = function(g, x, y, w, h, fill, outline){
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.fillStyle = fill;
-      g.globalAlpha = 0.4;
-      g.fill();
-      g.globalAlpha = 1;
-      g.strokeStyle = outline;
-      g.lineWidth = 1
-      g.stroke();
-      g.closePath();
-      g.restore();
-    };
-    var drawHud = function(g, state){
+
+    var drawHud = function(g, data){
+      var state = data.state;
+      var scene = data.scene;
       var spacer = 5;
       var height = 12;
       var maxwidth = 0;
@@ -227,10 +183,11 @@
         if(tm.width > maxwidth) maxwidth = tm.width;
       }
       g.restore();
-      
-      drawPanel(g, 20, 20, maxwidth + 40, activeplayers.length * (height + spacer) + spacer, "#000099", "#0000FF");
-      g.save();
-      g.beginPath();
+      scene.drawPanel(g, {
+        x : 20, y: 20, w : maxwidth + 40, h : activeplayers.length * (height + spacer) + spacer,
+        fill : "#000099", outline : "#0000FF"
+      });
+
       g.font = "bold 12px sans-serif";
       g.fillStyle = "#ccc";
       g.textBaseline = "top";
@@ -242,8 +199,6 @@
         }
         y += height + spacer
       }
-      g.closePath();
-      g.restore();
       
     };
 
@@ -252,16 +207,16 @@
     };
     return function(g, state){
       if(state["galaxy"]){
-        drawStarField(g, state.galaxy);
+        this.painterMethod(g, drawStarField, state.galaxy);
         if(state["planets"]){
           for(p in state.planets) {
             if(typeof(state.planets[p]['x'])=="undefined") continue;
             state.planets[p]['name'] = p;
-            drawPlanet(g, state.planets[p], state.galaxy);
+            this.painterMethod(g, drawPlanet, {'planet':state.planets[p], 'galaxy' : state.galaxy});
           }
         }
-        drawAxis(g, state);
-        drawHud(g, state);
+        this.painterMethod(g, drawAxis, state);
+        this.painterMethod(g, drawHud, {'state' : state, 'scene' : this});
       }
     }; 
   }();
@@ -273,7 +228,7 @@
     init : function(g){
       gengic = g;
       g.addScene('menu', menuscene);
-      var gamescene = gengic.newCanvasScene({'w': 1000, 'h': 800, 'x' : 500, 'y' : 400});
+      var gamescene = gengic.scene.canvasScene({'w': 1000, 'h': 800, 'x' : 500, 'y' : 400});
       gamescene.paint = gamescenePainter;
       
       g.addScene('game', gamescene);
