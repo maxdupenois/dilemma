@@ -206,6 +206,7 @@ var dilemmac = (function(){
       return {'x' : x - galaxy.x + g.canvas.width/2, 'y' : ( galaxy.y -y) + g.canvas.height/2} 
     };
     return function(g, state){
+      console.log(state);
       if(state["galaxy"]){
         this.painterMethod(g, drawStarField, state.galaxy);
         if(state["planets"]){

@@ -10,16 +10,15 @@ exports.addPlayer = function(user){
   user.addScene('menu', menuscene);
   user.addScene('game', gamescene);
   players[user.id()] = user;
-  players[user.id()].name = "Unknown";
+  var player = players[user.id()];
+  player.name = "Unknown";
   var myplanet = galaxy.newPlanet();
   myplanet.setPlayer(user);
+  player.home = myplanet;
   
-  user.getScene('game').centreOn(myplanet.x(), myplanet.y());
-  utils.each(players, function(k, player){
-    var pscenes = player.getScenes();
-    pscenes['game'].addPlanetComponent("home_"+player.id(), myplanet);
-  });
-  user.changeScene('menu');
+  player.getScene('game').centreOn(myplanet.x(), myplanet.y());
+  player.getScene('game').addPlanetComponent("home_"+player.id(), myplanet);
+  player.changeScene('menu');
 };
 
 exports.playerRejoined = function(user){

@@ -15,7 +15,7 @@ exports.planet = function(coords){
   }
   var r_val = Math.random()*30+10;
   var c_val = colours[Math.round(Math.random()*(colours.length-1))];
-  var player;
+  var player = null;
   return {
     x : function(){
       return x_val;

@@ -120,6 +120,7 @@
     for(var i = 0; i < events.length; i++){
       $(gamewindow).on(events[i]+"."+namespace, {'origin': origin}, gengicObj.interaction);
     }
+    
   }
  };
  gengicObj.setWindow(document);
@@ -147,10 +148,11 @@ gengic.scene.canvasScene = function(d, au){
     if(canvas != null) return ;
     $('body').html("");
     var c = $('<canvas/>')
-        .attr("id", "dilemma-canvas")
-        .attr("width", dimensions.w)
-        .attr("height", dimensions.h)
-        .attr("style", "background-color: #000;");
+        .attr({"id"   : "dilemma-canvas",
+            "width"   : dimensions.w,
+            "height"  : dimensions.h,
+            "tabindex": 1,
+            "style"   : "background-color: #000;"});
     var cBuffer = c.clone().attr('style' , 'display:none;');
     bufferCanvas = cBuffer;
     $('body').append(c);
@@ -289,7 +291,10 @@ gengic.utils.select = function(iterable, func){
 gengic.utils.trim = function(str){
   return str.replace(/(^\s*)|(\s*$)/, "");
 };
-
+gengic.utils.like = function(str, regex){
+  var mtch = str.match(regex, str);
+  return gengic.utils.exists(mtch) && mtch.length >= 0;
+};
 gengic.utils.exists = function(obj){
   return ((typeof(obj)).toLowerCase() != "undefined" && obj != null);
 };

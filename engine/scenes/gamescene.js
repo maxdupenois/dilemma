@@ -37,6 +37,17 @@ exports.gamescene = function(name, user){
       plnt.highlight(coords.x, coords.y);
     });
   };
+  scene.keydown = function(evt){
+    
+  };
+  scene.keyup = function(evt){
+  };
+  scene.keypress = function(evt){
+    if(evt.charCode == utils.charcodes['h'] || evt.charCode == utils.charcodes['H']){
+      var homeplanet = scene.getUser().home;
+      galaxyc.moveTo(homeplanet.x(), homeplanet.y());
+    }
+  };
   scene.mouseup = function(evt){
     mousedown = false;
   };
